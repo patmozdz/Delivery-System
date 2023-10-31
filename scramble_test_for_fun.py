@@ -1,6 +1,6 @@
 import random
 import itertools
-from package import main
+from main import main
 
 
 def run_random():

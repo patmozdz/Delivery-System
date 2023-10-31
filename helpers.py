@@ -2,6 +2,11 @@ import usaddress
 from unclean_dict import unclean_dict
 
 
+def time_to_value(time: str):
+    hours, minutes = time.split(':')
+    return int(hours) * 60 + int(minutes)
+
+
 def address_to_key(address: str) -> str:
     # Parse the address using the `usaddress` library
     parsed_address, _ = usaddress.tag(address.strip())

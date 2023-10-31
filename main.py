@@ -1,6 +1,52 @@
 # Student ID: 011247440
 from unclean_dict import unclean_dict
 from classes import Package, Truck
+from helpers import time_to_value
+
+
+def ui_loop():
+    intro_message = """
+    Welcome to the WGUPS Package Delivery System!
+    Please enter 's' to view the status of all packages at a specific time,
+    Enter "q" to quit,
+    Enter "h" to view this message again.
+    """
+
+    print(intro_message)
+    while True:
+        user_input = input('Enter menu option: ')
+        if user_input == 's':
+            start_time = input("Please enter the start time in HH:MM format: ")
+            start_time = time_to_value(start_time)
+
+            end_time = input("Please enter the end time in HH:MM format: ")
+            end_time = time_to_value(end_time)
+
+            nodes = [node for node in Package.current_day_packages if node.data is not None]
+            packages = []
+            for node in nodes:
+                while node:
+                    packages.append(node.data)
+                    node = node.next
+
+            packages_in_timeframe = []
+            all_other_packages = []
+            for package in packages:
+                if package.status.split()[0] == 'Delivered' and start_time <= time_to_value(package.status.split()[-1]) <= end_time:
+                    packages_in_timeframe.append(package)
+                else:
+                    all_other_packages.append(package)
+
+            print("\n\tPackages delivered in the specified timeframe:\n")
+            for package in packages_in_timeframe:
+                print(f'Package with id: {package.id} was delivered at {package.status.split()[-1]}')
+
+        elif user_input == 'q':
+            break
+        elif user_input == 'h':
+            print(intro_message)
+        else:
+            print("Invalid input. Please try again.")
 
 
 def main():
@@ -8,8 +54,8 @@ def main():
     Package.set_current_day_packages('package_list.csv')
 
     # Initialize two trucks with unique IDs
-    truck1 = Truck(1)
-    truck2 = Truck(2)
+    truck1 = Truck(1, '09:05')
+    truck2 = Truck(2, '08:00')
 
     # Priority packages for truck2 categorized by their level of priority
     truck2_top_priority = [15]
@@ -36,7 +82,10 @@ def main():
     truck1.drive()
 
     # Print the total distance traveled by both trucks
-    print(truck1.total_dist_traveled + truck2.total_dist_traveled)
+    print(f'Total distance traveled: {(truck1.total_dist_traveled + truck2.total_dist_traveled):.2f} miles')
+
+    # Run the user interface loop
+    ui_loop()
 
 
 # Call the main function

@@ -2,7 +2,7 @@ import csv
 import usaddress
 from collections import deque
 from itertools import permutations
-from helpers import address_to_key, cleaned_distance_dict
+from helpers import address_to_key, cleaned_distance_dict, time_to_value
 
 
 # Define Node for linked list structure
@@ -84,11 +84,12 @@ class Truck:
     HUB = address_to_key("Western Governors University 4001 South 700 East, Salt Lake City, UT 84107")  # Central hub
 
     # Constructor for Truck
-    def __init__(self, id):
+    def __init__(self, id, leave_time='00:00'):
         self.id = id
         self.package_groups = deque()  # Maintain package groups for the truck
         self.current_location = self.HUB  # Start at the hub
         self. total_dist_traveled = 0  # Initialize total distance to 0
+        self.leave_time = leave_time
 
     # Load packages onto the truck
     def load(self, remainder, *args: list):  # Could be modified to be "smart search" so that it loads packages that have addresses already in the truck first
@@ -121,24 +122,26 @@ class Truck:
         # Deliver packages and update status
         while self.package_groups:
             current_group = self.package_groups.popleft()
-            route, route_dist = self.calculate_best_combination(current_group, go_back=go_back)
-            self.total_dist_traveled += route_dist
-            self.current_location = route[-1]
+            route = self.calculate_best_combination(current_group, go_back=go_back)
 
             # Check delivery status for each package
             for location in route:
+                self.total_dist_traveled += self.distance_between(self.current_location, location)
+                self.current_location = location
+                time_arrived = self.dist_to_time()
+
                 for package_id in current_group:
                     package = Package.hash_lookup(package_id)
                     if package.address == location:
-                        package.status = 'Delivered'
+                        package.status = f'Delivered - {time_arrived}'
                         current_group.remove(package.id)
 
                 for other_group in self.package_groups:
-                    for package_id in current_group:
+                    for package_id in other_group:
                         package = Package.hash_lookup(package_id)
                         if package.address == location:
-                            package.status = 'Delivered'
-                            other_group.remove(package)
+                            package.status = f'Delivered - {time_arrived}'
+                            other_group.remove(package_id)
 
     # Calculate best route for package delivery
     def calculate_best_combination(self, package_group, go_back=False):
@@ -164,7 +167,23 @@ class Truck:
                 best_route = route
                 best_route_total_dist = total_dist
 
-        return best_route, best_route_total_dist
+        return best_route
+
+    def dist_to_time(self):
+        total_hours_traveled = self.total_dist_traveled / 18
+        total_minutes_traveled = int(total_hours_traveled * 60)
+
+        time = time_to_value(self.leave_time) + total_minutes_traveled
+
+        hours_traveled = str(time // 60)
+        if len(hours_traveled) == 1:
+            hours_traveled = '0' + hours_traveled
+
+        minutes_traveled = str(time % 60)
+        if len(minutes_traveled) == 1:
+            minutes_traveled = '0' + minutes_traveled
+
+        return f'{hours_traveled}:{minutes_traveled}'
 
     # Calculate distance between two cities
     def distance_between(self, city1, city2):
